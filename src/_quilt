@@ -1,0 +1,236 @@
+#compdef quilt
+# ------------------------------------------------------------------------------
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the zsh-users nor the
+#       names of its contributors may be used to endorse or promote products
+#       derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL ZSH-USERS BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# ------------------------------------------------------------------------------
+# Description
+# -----------
+#
+#  Completion script for quilt (https://savannah.nongnu.org/projects/quilt)
+#
+# ------------------------------------------------------------------------------
+# Authors
+# -------
+#
+#  * Andreas Schneider <asn@cryptomilk.org>
+#
+# ------------------------------------------------------------------------------
+
+_quilt_commands() {
+  local commands=(
+    'add:Add files to the topmost or named patch'
+    'annotate:Listing of the specified file showing which patches modify which line'
+    'applied:List of applied patches'
+    'delete:Remove the specified or topmost patch from the series file'
+    'diff:Produces a diff of the specified file(s)'
+    'edit:Edit specified file'
+    'files:Print the list of files'
+    'fold:Integrate the patch read from standard input into the topmost patch'
+    'fork:Fork the topmost patch'
+    'graph:Generate a dot(1) directed graph'
+    'grep:Grep through the source files, recursively, skipping patches and quilt meta-information'
+    'header:Print or change the header of the topmost or specified patch'
+    'import:Import external patches'
+    'mail:Create mail messages from a specified range of patches, or all patches in the series file'
+    'new:Create a new patch with the specified file name'
+
+    'setup:Initializes a source tree from an rpm spec file or a quilt series file'
+  )
+
+  _describe -t commands 'quilt commands' commands
+}
+
+_quilt_series() {
+  local series=($(_call_program series quilt series))
+  _describe -t series 'series of patches' series
+}
+
+_quilt() {
+  local context state state_descr line
+  typeset -A opt_args
+
+  _arguments \
+    '--trace=[Runs the command in bash trace mode (-x)]:verbose:(verbose )' \
+    '--quiltrc=[Use the specified configuration file instead of ~/.quiltrc]:quiltrc:_files' \
+    '--version[Print the version number]' \
+    '1: :_quilt_commands' \
+    '*:: :->command_args' \
+  && ret=0
+
+  case $state in
+    command_args)
+      case $words[1] in
+        help)
+          _arguments \
+            '1: :_quilt_commands' \
+        ;;
+
+        add)
+          _arguments \
+            '-P[Patch to add files to]:patch:_quilt_series' \
+            '1:file:_files'
+        ;;
+
+        annotate)
+          _arguments \
+            '-P[Stop at this patch]:patch:_quilt_series' \
+            '1:file:_files'
+        ;;
+
+        applied)
+          _arguments \
+            '1:patch:_quilt_series'
+        ;;
+
+        delete)
+          _arguments \
+            '-n[Delete the next patch after topmost]' \
+            '-r[Remove the deleted patch file from patches dir too]' \
+            '--backup[Rename the patch file to patch~ instead of deleting]'
+        ;;
+
+        diff)
+          _arguments \
+            '-p[Create a -pN style patch]:N' \
+            '-p[Create a -p1 style patch, but use a/file and b/file]:ab' \
+            '--backup[Rename the patch file to patch~ instead of deleting]' \
+            '-u[Create a unified diff]' \
+            '--no-timestamps[Do not include file timestamps in patch headers]' \
+            '--no-index[Do not output Index: lines]' \
+            '-z[Write to stdout]' \
+            '-R[Create a reverse diff]' \
+            '-P[Create a diff for the specified patch]:patch' \
+            '--combine[Create a combined diff]:patch' \
+            '--snapshot[Diff against snapshot]' \
+            '--diff=[Use the specified utility for generating the diff]:utility:_files' \
+            '--color[Use syntax coloring]:color:(always auto never)' \
+            '--sort[Sort files by their name]'
+        ;;
+
+        edit)
+          _arguments \
+            '*:files:_files'
+        ;;
+
+        files)
+          _arguments \
+            '-a[List all files in all applied patches]' \
+            '-l[Add patch name to output]' \
+            '-v[Verbose output]' \
+            '--combine[Create a listing for all patches]:patch:_quilt_series' \
+            '1:patch:_quilt_series'
+        ;;
+
+        fold)
+          _arguments \
+            '-R[Apply patch in reverse]' \
+            '-q[Quiet operation]' \
+            '-f[Force  apply]' \
+            '-p[strip-level]:N' \
+        ;;
+
+        fork)
+          _arguments \
+            '1:newname'
+        ;;
+
+        graph)
+          _arguments \
+            '--all[Generate a graph including all applied patches]' \
+            '--reduce[Eliminate transitive edges from the graph]' \
+            '--lines[ Compute dependencies by looking at the lines the patches modify]:num' \
+            '--edge-labels=[Label graph edges with the file names that the adjacent patches modify]:files:_files' \
+            '-T[Directly produce a PostScript output file]:ps'
+        ;;
+
+        grep)
+          _arguments \
+            '-h[Print help]' \
+            ':1:pattern'
+        ;;
+
+        header)
+          _arguments \
+            '-a[Append to patch header]' \
+            '-r[Replace patch header]' \
+            '-e[Edit patch header]' \
+            '--strip-diffstat[Strip diffstat output from the header]' \
+            '--strip-diffstat-whitespace[Strip trailing whitespace at the end of lines of the header]' \
+            '--backup[Create a backup copy of the old version of a patch]' \
+            '1:patch:_quilt_series'
+        ;;
+
+        import)
+          _arguments \
+            '-p[Number of directory levels to strip when applying]:N' \
+            '-R[Apply patch in reverse]:N' \
+            '-P[Patch filename to use inside quilt]:patch:_quilt_series' \
+            '-f[Overwrite/update existing patches]' \
+            '-d[When overwriting in existing patch, keep the old (o), all (a) or new (n) patch header]:cmd:(o a n)'
+        ;;
+
+        mail)
+          _arguments \
+            '-m[Text to use as the text in the introduction]:text' \
+            '-M[Text to use as the text in the introduction read from a file]:file:_files' \
+            '--prefix[Use an alternate prefix in the bracketed part of the subjects generated]:prefix' \
+            '--mbox[Store all messages in the specified file in mbox format]:file:_files' \
+            '--send[Send the messages directly]' \
+            '--sender[The envelope sender address to use]' \
+            '--from[The value for From to use]' \
+            '--subject[The value for Subject to use]' \
+            '--to[Append a recipient to the To header]' \
+            '--cc[Append a recipient to the Cc header]' \
+            '--bcc[Append a recipient to the Bcc header]' \
+            '--charset[Specify a particular message encoding]' \
+            '--signature[Append the specified signature to messages]:file:_files' \
+            '--reply-to[Add the appropriate headers to reply to the specified message]:message'
+        ;;
+
+        new)
+          _arguments \
+            '-p[Create a -p N style patch]:N' \
+            '-p[Create a -p1 style patch, but use a/file and b/file]:ab' \
+            '1:patchname'
+        ;;
+
+        setup)
+          _arguments \
+            '-d[Optional path prefix]:path-prefix:_files -/' \
+            '--sourcedir[Directory that contains the package sources]:_files -/' \
+            '-v[Verbose debug output]' \
+            '--fuzz=[Set the maximum fuzz factor]:N' \
+            '--slow[Use  the original, slow method to process the spec file]' \
+            '--fast[Use an alternative, faster method to process the spec file]' \
+            '1:specfile:_files'
+        ;;
+        *)
+          _default
+        ;;
+      esac
+    ;;
+  esac
+
+  return $ret
+}
+
+_quilt "$@"
