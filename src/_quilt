@@ -52,6 +52,7 @@ _quilt_commands() {
     'import:Import external patches'
     'mail:Create mail messages from a specified range of patches, or all patches in the series file'
     'new:Create a new patch with the specified file name'
+    'next:Print the name of the next patch after the specified or topmost'
 
     'setup:Initializes a source tree from an rpm spec file or a quilt series file'
   )
@@ -211,6 +212,11 @@ _quilt() {
             '-p[Create a -p N style patch]:N' \
             '-p[Create a -p1 style patch, but use a/file and b/file]:ab' \
             '1:patchname'
+        ;;
+
+        next)
+          _arguments \
+            '1:patch:_quilt_series'
         ;;
 
         setup)
